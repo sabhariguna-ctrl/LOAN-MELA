@@ -1,12 +1,15 @@
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence, useScroll, useSpring, useTransform, useMotionValue } from 'framer-motion';
 import {
   Search, CheckCircle2, ArrowRight, ShieldCheck, FileText, Info, X, Lock, Unlock,
   Landmark, User, Phone, Mail, MapPin, Banknote, Send, ChevronDown, Sparkles, ImageIcon,
 } from 'lucide-react';
+import { getSession, submitApplication } from '../utils/auth';
+import { getSchemes, SCHEME_CHANGE_EVENT } from '../admin/shared/services/schemesService';
 
-/* ================= BRAND TOKENS ================= */
+/* ================= BRAND TOKENS =================
+   Both FONT_SERIF and FONT_BODY use Poppins, matching the Navbar. */
 const NAVY = '#132261';
 const BLUE = '#2f76fb';
 const BLUE_LIGHT = '#89b6f8';
@@ -30,17 +33,12 @@ const fadeUp = {
    Keys now match the official loan categories from the
    Constituency-Wise Loan Mela guide. */
 const GROUP_IMAGES = {
-  Professional: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1200&q=85',
+  Personal: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1200&q=85',
   Business: 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1200&q=85',
-  Livelihood: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=1200&q=85',
   Education: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=85',
-  Medical: 'https://images.unsplash.com/photo-1584982751601-97dcc096659c?auto=format&fit=crop&w=1200&q=85',
   Agriculture: 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=85',
-  Vehicle: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=1200&q=85',
-  Home: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1200&q=85',
-  Equipment: 'https://images.unsplash.com/photo-1560520653-9e0e4c89eb11?auto=format&fit=crop&w=1200&q=85',
-  'Working Capital': 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1200&q=85',
-  'Women Enterprise': 'https://images.unsplash.com/photo-1573164713988-8665fc963095?auto=format&fit=crop&w=1200&q=85',
+  Automotive: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=1200&q=85',
+  Housing: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1200&q=85',
 };
 
 /* ================= HERO 3D ICONS ================= */
@@ -120,195 +118,22 @@ function Pic({ src, alt = '', className = '', imgClass = '', rounded = 'rounded-
 }
 
 /* ================= LOAN CATALOG =================
-   Sourced from the "Constituency-Wise Loan Mela — Loan Matching &
-   Applicant Guidance Framework". Categories, purposes, eligibility
-   signals and document lists follow that guide directly; final
-   sanction, rate, tenure and collateral remain subject to the
-   participating lender's own policy and assessment. */
-const LOAN_SCHEMES = [
-  {
-    id: 'professional-career',
-    name: 'Professional / Career Loan',
-    filterGroup: 'Professional',
-    categoryLabel: 'Unsecured Loan',
-    collateralStatus: 'unsecured',
-    types: ['Professional Equipment', 'Certification & Licensing', 'Office Setup', 'Career-Related Investment'],
-    eligibility: [
-      'Working professional, self-employed professional or applicant seeking career advancement',
-      'Stated purpose supports career-related investment',
-      'Stable income source',
-      'Basic KYC and income details on record',
-    ],
-    documents: ['Identity Proof', 'Address Proof', 'Income Proof', 'Bank Statements'],
-    collateral: 'Not Required',
-  },
-  {
-    id: 'business-msme',
-    name: 'Business / MSME Loan',
-    filterGroup: 'Business',
-    categoryLabel: 'Secured / Unsecured',
-    collateralStatus: 'mixed',
-    types: ['Business Expansion', 'Machinery Purchase', 'Working Capital', 'Shop / Office Setup'],
-    eligibility: [
-      'Small business owner, trader, service provider or entrepreneur',
-      'Business or activity proof available',
-      'Approximate turnover and duration of business known',
-    ],
-    documents: ['Identity / Address Proof', 'Income Proof', 'Bank Statements', 'Business / Activity Proof'],
-    collateral: 'Subject to lender policy',
-  },
-  {
-    id: 'self-employment-livelihood',
-    name: 'Self-Employment / Livelihood Loan',
-    filterGroup: 'Livelihood',
-    categoryLabel: 'Mostly Unsecured',
-    collateralStatus: 'unsecured',
-    types: ['Tools & Equipment', 'Small Enterprise Setup', 'Income-Generating Assets'],
-    eligibility: [
-      'Individual seeking to start or strengthen a livelihood activity',
-      'Purpose creates or supports income generation',
-      'Basic KYC and activity details available',
-    ],
-    documents: ['Identity / Address Proof', 'Income Proof (if available)', 'Business / Activity Proof', 'Quotations for Tools or Equipment'],
-    collateral: 'Not Required',
-  },
-  {
-    id: 'education-skill',
-    name: 'Education / Skill Development Loan',
-    filterGroup: 'Education',
-    categoryLabel: 'Mostly Unsecured',
-    collateralStatus: 'mixed',
-    types: ['Higher Education', 'Vocational Training', 'Technical Courses', 'Certifications'],
-    eligibility: [
-      'Student, trainee or worker upgrading skills',
-      'Admission or enrolment confirmation available',
-      'Purpose supports education or skill upgrade',
-    ],
-    documents: ['Identity / Address Proof', 'Education Documents', 'Income Proof', 'Bank Statements'],
-    collateral: 'Depends on loan amount',
-  },
-  {
-    id: 'medical-healthcare',
-    name: 'Medical / Healthcare Loan',
-    filterGroup: 'Medical',
-    categoryLabel: 'Unsecured Loan',
-    collateralStatus: 'unsecured',
-    types: ['Hospitalisation', 'Medical Procedures', 'Treatment-Related Expenses'],
-    eligibility: [
-      'Individual or family facing an eligible healthcare expense',
-      'Current eligibility and documentation verified with the lender',
-    ],
-    documents: ['Identity / Address Proof', 'Income Proof', 'Bank Statements', 'Medical Estimates'],
-    collateral: 'Not Required',
-  },
-  {
-    id: 'agriculture-allied',
-    name: 'Agriculture & Allied Activities Loan',
-    filterGroup: 'Agriculture',
-    categoryLabel: 'Secured / Government',
-    collateralStatus: 'mixed',
-    types: ['Farm Inputs', 'Irrigation', 'Equipment', 'Dairy & Poultry', 'Allied Activities'],
-    eligibility: [
-      'Farmer or rural entrepreneur',
-      'Land ownership or lease details available',
-      'KYC required',
-    ],
-    documents: ['Identity / Address Proof', 'Business / Activity Proof', 'Bank Statements', 'Quotations for Equipment'],
-    collateral: 'Depends on scheme',
-  },
-  {
-    id: 'vehicle-commercial',
-    name: 'Vehicle / Commercial Vehicle Loan',
-    filterGroup: 'Vehicle',
-    categoryLabel: 'Secured Loan',
-    collateralStatus: 'secured',
-    types: ['Eligible Personal Vehicle', 'Income-Generating Commercial Vehicle'],
-    eligibility: [
-      'Worker, self-employed person or small operator',
-      'Regular income source',
-      'Purpose is personal use or income generation',
-    ],
-    documents: ['Identity / Address Proof', 'Income Proof', 'Bank Statements', 'Vehicle Quotation'],
-    collateral: 'Vehicle Financed',
-  },
-  {
-    id: 'home-improvement-repair',
-    name: 'Home Improvement / Repair Loan',
-    filterGroup: 'Home',
-    categoryLabel: 'Secured / Unsecured',
-    collateralStatus: 'mixed',
-    types: ['Repairs', 'Renovation', 'Essential Home Improvements'],
-    eligibility: [
-      'Existing homeowner',
-      'Stable income source',
-      'Purpose limited to repair or improvement of existing home',
-    ],
-    documents: ['Identity / Address Proof', 'Income Proof', 'Bank Statements', 'Property Documents'],
-    collateral: 'Subject to lender policy',
-  },
-  {
-    id: 'equipment-asset-finance',
-    name: 'Equipment / Asset Finance',
-    filterGroup: 'Equipment',
-    categoryLabel: 'Secured Loan',
-    collateralStatus: 'secured',
-    types: ['Productive Equipment', 'Machinery', 'Eligible Business Assets'],
-    eligibility: [
-      'Business or self-employed applicant',
-      'Business / activity proof available',
-      'Quotation for the equipment or asset',
-    ],
-    documents: ['Identity / Address Proof', 'Business / Activity Proof', 'Bank Statements', 'Quotations'],
-    collateral: 'Equipment / Asset Financed',
-  },
-  {
-    id: 'working-capital',
-    name: 'Working Capital Loan',
-    filterGroup: 'Working Capital',
-    categoryLabel: 'Business Loan',
-    collateralStatus: 'mixed',
-    types: ['Inventory Financing', 'Receivables Financing', 'Day-to-Day Business Requirements'],
-    eligibility: [
-      'Existing business with operating cash-flow needs',
-      'Business / activity proof available',
-    ],
-    documents: ['Identity / Address Proof', 'Business / Activity Proof', 'Bank Statements', 'Income Proof'],
-    collateral: 'Subject to lender policy',
-  },
-  {
-    id: 'women-group-enterprise',
-    name: 'Women / Group Enterprise Finance',
-    filterGroup: 'Women Enterprise',
-    categoryLabel: 'Scheme-Based Finance',
-    collateralStatus: 'mixed',
-    types: ['Micro-Enterprise Creation', 'Micro-Enterprise Expansion'],
-    eligibility: [
-      'Eligible women-led or group-based enterprise',
-      'Subject to the participating lender\u2019s scheme criteria',
-    ],
-    documents: ['Identity / Address Proof', 'Business / Activity Proof', 'Bank Statements', 'Group / Enterprise Details'],
-    collateral: 'Depends on lender scheme',
-  },
-];
+   Live data — reads the same localStorage-backed store admin's
+   Schemes page writes to (schemesService.js), so anything added,
+   edited or deactivated in admin shows up here automatically. */
+const toCollateralStatus = (collateral) => {
+  if (collateral === 'Required') return 'secured';
+  if (collateral === 'Not Required') return 'unsecured';
+  return 'mixed';
+};
 
-const TYPE_CARDS = LOAN_SCHEMES.flatMap((scheme) =>
-  scheme.types.map((type) => ({
-    id: `${scheme.id}-${type.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
-    typeName: type,
-    parentName: scheme.name,
-    filterGroup: scheme.filterGroup,
-    categoryLabel: scheme.categoryLabel,
-    collateralStatus: scheme.collateralStatus,
-    eligibility: scheme.eligibility,
-    documents: scheme.documents,
-    collateral: scheme.collateral,
-  }))
-);
+const splitEligibility = (text) =>
+  (text || '')
+    .split(/(?<=[.;])\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
 
-const CATEGORIES = [
-  'All', 'Professional', 'Business', 'Livelihood', 'Education', 'Medical',
-  'Agriculture', 'Vehicle', 'Home', 'Equipment', 'Working Capital', 'Women Enterprise',
-];
+const CATEGORIES = ['All', 'Personal', 'Housing', 'Business', 'Automotive', 'Education', 'Agriculture'];
 
 const collateralBadge = (status) => {
   if (status === 'secured') {
@@ -356,6 +181,22 @@ function TiltCard({ children, className = '' }) {
 /* ================= MAIN PAGE ================= */
 export default function Loanschema() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [session, setSession] = useState(() => getSession());
+  const [schemes, setSchemes] = useState(() => getSchemes());
+
+  // Admin's Schemes page can add/edit/delete/toggle at any time (even in
+  // another tab), so stay in sync with the same localStorage-backed store
+  // it writes to, the same way admin's own page does.
+  useEffect(() => {
+    const refresh = () => setSchemes(getSchemes());
+    window.addEventListener(SCHEME_CHANGE_EVENT, refresh);
+    window.addEventListener('storage', refresh);
+    return () => {
+      window.removeEventListener(SCHEME_CHANGE_EVENT, refresh);
+      window.removeEventListener('storage', refresh);
+    };
+  }, []);
   const [selectedCategory, setSelectedCategory] = useState(location.state?.filterGroup || 'All');
   const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
   const categoryMenuRef = useRef(null);
@@ -373,11 +214,36 @@ export default function Loanschema() {
   const { scrollYProgress } = useScroll({ target: pageRef, offset: ['start start', 'end end'] });
   const progress = useSpring(scrollYProgress, { stiffness: 90, damping: 24, mass: 0.3 });
 
+  // Keep session in sync in case the person logs in/out in another tab
+  // while this page is open (e.g. right before applying).
+  useEffect(() => {
+    const syncSession = () => setSession(getSession());
+    window.addEventListener('authchange', syncSession);
+    window.addEventListener('storage', syncSession);
+    return () => {
+      window.removeEventListener('authchange', syncSession);
+      window.removeEventListener('storage', syncSession);
+    };
+  }, []);
+
   const openApplyForm = (item) => {
+    // Applications are tied to an account so they can show up on the My
+    // Applications page — send signed-out visitors to log in first.
+    if (!getSession()) {
+      navigate('/login', { state: { redirectTo: '/schema' } });
+      return;
+    }
+
     setApplyItem(item);
     setApplySubmitted(false);
     setApplyErrors({});
-    setApplyForm({ name: '', phone: '', email: '', amount: '', city: '' });
+    setApplyForm({
+      name: session?.fullName || '',
+      phone: '',
+      email: session?.email || '',
+      amount: '',
+      city: '',
+    });
   };
 
   const closeApplyForm = () => {
@@ -411,27 +277,48 @@ export default function Loanschema() {
       return;
     }
 
+    submitApplication({
+      userEmail: session?.email || applyForm.email,
+      schemeId: applyItem?.id,
+      schemeTitle: applyItem?.title,
+      parentName: applyItem?.parentName,
+      categoryLabel: applyItem?.categoryLabel,
+      name: applyForm.name.trim(),
+      phone: applyForm.phone.trim(),
+      email: applyForm.email.trim(),
+      amount: applyForm.amount.trim(),
+      city: applyForm.city.trim(),
+    });
+
     setApplySubmitted(true);
   };
 
   const query = searchQuery.toLowerCase();
 
-  const cardsToShow = TYPE_CARDS.filter((type) => {
-    const matchesCategory = selectedCategory === 'All' || type.filterGroup === selectedCategory;
-    const matchesSearch =
-      type.typeName.toLowerCase().includes(query) || type.parentName.toLowerCase().includes(query);
-    return matchesCategory && matchesSearch;
-  }).map((type) => ({
-    id: type.id,
-    title: type.typeName,
-    parentName: type.parentName,
-    groupLabel: type.filterGroup,
-    categoryLabel: type.categoryLabel,
-    collateralStatus: type.collateralStatus,
-    collateral: type.collateral,
-    eligibility: type.eligibility,
-    documents: type.documents,
-  }));
+  const cardsToShow = schemes
+    .filter((scheme) => scheme.status === 'Active')
+    .filter((scheme) => {
+      const matchesCategory = selectedCategory === 'All' || scheme.category === selectedCategory;
+      const matchesSearch =
+        scheme.name.toLowerCase().includes(query) ||
+        (scheme.shortDescription || '').toLowerCase().includes(query);
+      return matchesCategory && matchesSearch;
+    })
+    .map((scheme) => ({
+      id: scheme.id,
+      title: scheme.name,
+      parentName: scheme.loanType,
+      groupLabel: scheme.category,
+      categoryLabel: scheme.loanType,
+      collateralStatus: toCollateralStatus(scheme.collateral),
+      collateral: scheme.collateral,
+      eligibility: splitEligibility(scheme.eligibility),
+      documents: scheme.documents,
+      interestRate: scheme.interestRate,
+      minAmount: scheme.minAmount,
+      maxAmount: scheme.maxAmount,
+      tenure: scheme.tenure,
+    }));
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -829,9 +716,18 @@ export default function Loanschema() {
                     <strong style={{ color: TEXT }}>{applyForm.phone}</strong> within 24 hours.
                   </p>
 
-                  <button onClick={closeApplyForm} className="mt-6 rounded-full px-6 py-2.5 text-[13px] font-semibold text-white" style={{ background: NAVY }}>
-                    Done
-                  </button>
+                  <div className="mt-6 flex items-center justify-center gap-3">
+                    <button onClick={closeApplyForm} className="rounded-full border px-5 py-2.5 text-[13px] font-semibold" style={{ borderColor: GRAY, color: SLATE }}>
+                      Done
+                    </button>
+                    <button
+                      onClick={() => { closeApplyForm(); navigate('/my-applications'); }}
+                      className="rounded-full px-5 py-2.5 text-[13px] font-semibold text-white"
+                      style={{ background: NAVY }}
+                    >
+                      View My Applications
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <>

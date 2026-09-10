@@ -1,17 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowUpRight, Menu, X, Zap, TrendingUp, User, LogOut } from 'lucide-react';
+import { ArrowUpRight, Menu, X, Zap, TrendingUp, User, LogOut, ChevronDown, FileText, UserCircle } from 'lucide-react';
 import { getSession, logoutUser } from '../utils/auth';
 
 // Local color/font tokens (previously imported from a shared Colourservice
 // file, which no longer exists — defined here directly). ACCENT swapped
 // from green to the site's blue brand family (matches BLUE in other pages).
+// Both FONT_BODY and FONT_HEAD now use Poppins, matching the rest of the site.
 const ACCENT = '#2f76fb';
 const ACCENT_DARK = '#1d5fe0';
 const BG = '#ffffff';
 const TEXT_DARK = '#0a0f0d';
 const TEXT_MUTED = 'rgba(10,15,13,0.65)';
-const FONT_BODY = "'Inter', sans-serif";
+const FONT_BODY = "'Poppins', sans-serif";
 const FONT_HEAD = "'Poppins', sans-serif";
 
 const LINKS = [
@@ -26,6 +27,8 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [hovered, setHovered] = useState(null);
   const [session, setSessionState] = useState(() => getSession());
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -54,10 +57,43 @@ export default function Navbar() {
     };
   }, [location.pathname]);
 
+  // Close the account dropdown on outside click, same pattern used for the
+  // category filter menu on the Loan Scheme page.
+  useEffect(() => {
+    const onClickOutside = (event) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target)) {
+        setAccountMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  // Close the dropdown whenever the route changes (e.g. after clicking
+  // "My Profile"), so it doesn't stay open floating over the new page.
+  useEffect(() => {
+    setAccountMenuOpen(false);
+  }, [location.pathname]);
+
   const handleLogout = () => {
     setMobileOpen(false);
+    setAccountMenuOpen(false);
     logoutUser();
     navigate('/');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const goToProfile = () => {
+    setAccountMenuOpen(false);
+    setMobileOpen(false);
+    navigate('/profile');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const goToApplications = () => {
+    setAccountMenuOpen(false);
+    setMobileOpen(false);
+    navigate('/my-applications');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -104,6 +140,10 @@ export default function Navbar() {
         fontFamily: FONT_BODY,
       }}
     >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+      `}</style>
+
       <div className="absolute inset-0 opacity-[0.25] pointer-events-none"
         style={{
           backgroundImage: 'radial-gradient(circle, rgba(10,15,13,0.12) 1px, transparent 1px)',
@@ -175,19 +215,50 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-6">
           {session ? (
             <>
-              <div
-                className="flex items-center gap-2 rounded-full px-3.5 py-2"
-                style={{ background: 'rgba(47,118,251,0.08)' }}
-              >
-                <div
-                  className="flex h-7 w-7 items-center justify-center rounded-full text-white"
-                  style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})` }}
+              <div className="relative" ref={accountMenuRef}>
+                <button
+                  onClick={() => setAccountMenuOpen((v) => !v)}
+                  className="flex items-center gap-2 rounded-full px-3.5 py-2 transition-colors"
+                  style={{ background: 'rgba(47,118,251,0.08)' }}
                 >
-                  <User size={14} />
-                </div>
-                <span className="text-[13.5px] font-semibold" style={{ fontFamily: FONT_HEAD, color: TEXT_DARK }}>
-                  {session.fullName ? session.fullName.split(' ')[0] : session.email}
-                </span>
+                  <div
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-white"
+                    style={{ background: `linear-gradient(135deg, ${ACCENT}, ${ACCENT_DARK})` }}
+                  >
+                    <User size={14} />
+                  </div>
+                  <span className="text-[13.5px] font-semibold" style={{ fontFamily: FONT_HEAD, color: TEXT_DARK }}>
+                    {session.fullName ? session.fullName.split(' ')[0] : session.email}
+                  </span>
+                  <ChevronDown
+                    size={15}
+                    style={{ color: TEXT_MUTED, transform: accountMenuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
+                  />
+                </button>
+
+                {accountMenuOpen && (
+                  <div
+                    className="absolute right-0 top-[calc(100%+8px)] w-52 rounded-xl border bg-white py-1.5 shadow-[0_12px_30px_rgba(10,15,13,0.12)]"
+                    style={{ borderColor: 'rgba(10,15,13,0.08)', fontFamily: FONT_HEAD, zIndex: 60 }}
+                  >
+                    <button
+                      onClick={goToProfile}
+                      className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-[13.5px] font-semibold transition-colors hover:bg-[rgba(47,118,251,0.08)]"
+                      style={{ color: TEXT_DARK }}
+                    >
+                      <UserCircle size={16} style={{ color: ACCENT }} />
+                      My Profile
+                    </button>
+                    <button
+                      onClick={goToApplications}
+                      className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-[13.5px] font-semibold transition-colors hover:bg-[rgba(47,118,251,0.08)]"
+                      style={{ color: TEXT_DARK }}
+                    >
+                      <FileText size={16} style={{ color: ACCENT }} />
+                      My Applications
+                    </button>
+                  </div>
+                )}
               </div>
 
               <button
@@ -248,11 +319,11 @@ export default function Navbar() {
             </li>
           ))}
         </ul>
-        <div className="flex items-center gap-3 px-6 py-4">
+        <div className="flex flex-col gap-3 px-6 py-4">
           {session ? (
             <>
               <div
-                className="flex flex-1 items-center gap-2 rounded-full px-3.5 py-2.5"
+                className="flex items-center gap-2 rounded-full px-3.5 py-2.5"
                 style={{ background: 'rgba(47,118,251,0.08)' }}
               >
                 <div
@@ -265,16 +336,34 @@ export default function Navbar() {
                   {session.fullName ? session.fullName.split(' ')[0] : session.email}
                 </span>
               </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={goToProfile}
+                  className="flex-1 font-bold border rounded-full py-2.5 text-[13px] inline-flex items-center justify-center gap-1.5"
+                  style={{ borderColor: 'rgba(10,15,13,0.15)', color: TEXT_DARK }}
+                >
+                  <UserCircle size={14} style={{ color: ACCENT }} /> My Profile
+                </button>
+                <button
+                  onClick={goToApplications}
+                  className="flex-1 font-bold border rounded-full py-2.5 text-[13px] inline-flex items-center justify-center gap-1.5"
+                  style={{ borderColor: 'rgba(10,15,13,0.15)', color: TEXT_DARK }}
+                >
+                  <FileText size={14} style={{ color: ACCENT }} /> My Applications
+                </button>
+              </div>
+
               <button
                 onClick={handleLogout}
-                className="flex-1 font-bold border rounded-full py-2.5 text-[13.5px] inline-flex items-center justify-center gap-1.5"
+                className="w-full font-bold border rounded-full py-2.5 text-[13.5px] inline-flex items-center justify-center gap-1.5"
                 style={{ borderColor: 'rgba(10,15,13,0.15)', color: TEXT_MUTED }}
               >
                 <LogOut size={14} /> Log out
               </button>
             </>
           ) : (
-            <>
+            <div className="flex gap-3">
               <button onClick={handleLoginClick} className="flex-1 font-bold border rounded-full py-2.5 text-[13.5px]" style={{ borderColor: 'rgba(10,15,13,0.15)', color: TEXT_MUTED }}>Log in</button>
               <button
                 onClick={handleRegisterClick}
@@ -283,7 +372,7 @@ export default function Navbar() {
               >
                  <TrendingUp size={14} /> Register Free
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>

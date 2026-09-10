@@ -230,7 +230,7 @@ export default function Login() {
 
       {/* ============ RIGHT FORM PANEL ============ */}
       <div className="flex flex-1 items-center justify-center px-5 py-10 sm:px-10" style={{ background: BLUE_PALE }}>
-        <div className="w-full max-w-[26rem]">
+        <div className="w-full max-w-104">
           {/* Mobile-only compact header — the brand panel is hidden below lg */}
           <div className="mb-6 lg:hidden">
             <div className="mb-3 flex items-center gap-2 text-[13px] font-medium">

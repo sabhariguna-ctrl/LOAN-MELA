@@ -94,10 +94,10 @@ const STANDS = [
 ];
 
 const USE_CASES = [
-  { img: IMG.useHome, icon: 'home', title: 'Fixing up the house', caption: 'Home Improvement / Repair Loan', filterGroup: 'Home', span: 'sm:col-span-2 sm:row-span-2' },
+  { img: IMG.useHome, icon: 'home', title: 'Fixing up the house', caption: 'Home Improvement / Repair Loan', filterGroup: 'Housing', span: 'sm:col-span-2 sm:row-span-2' },
   { img: IMG.useBiz, icon: 'biz', title: 'A growing shop', caption: 'Business / MSME Loan', filterGroup: 'Business', span: '' },
   { img: IMG.useEdu, icon: 'edu', title: 'Continuing an education', caption: 'Education / Skill Development Loan', filterGroup: 'Education', span: '' },
-  { img: IMG.useAuto, icon: 'auto', title: 'The first vehicle', caption: 'Vehicle / Commercial Vehicle Loan', filterGroup: 'Vehicle', span: 'sm:col-span-2' },
+  { img: IMG.useAuto, icon: 'auto', title: 'The first vehicle', caption: 'Vehicle / Commercial Vehicle Loan', filterGroup: 'Automotive', span: 'sm:col-span-2' },
 ];
 
 // LoanMela has just launched, so there are no real borrower stories yet.

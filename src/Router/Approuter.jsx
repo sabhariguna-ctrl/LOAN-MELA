@@ -7,6 +7,9 @@ import Loanschema from '../pages/Loanschema'
 import HowItWorks from '../pages/HowItWorks'
 import Register from '../pages/Register'
 import Login from '../pages/Login'
+import MyApplications from '../pages/MyApplications'
+import Profile from '../pages/Profile'
+import Adminrouter from '../admin/Router/Router'
 
 // Scrolls the window to the top whenever the route changes. React Router
 // doesn't do this automatically, so without it, navigating to a new page
@@ -32,9 +35,18 @@ export default function Approuter() {
       <Route path="/how-it-works" element ={<HowItWorks/>}/>
       <Route path="/register" element ={<Register/>}/>
       <Route path="/login" element ={<Login/>}/>
+      <Route path="/my-applications" element ={<MyApplications/>}/>
+      <Route path="/profile" element ={<Profile/>}/>
 
       </Route>
+<Route 
+            path="/dashboard/*"
+            element={
+          
+                <Adminrouter />
 
+            }
+          />
      </Routes>
       </BrowserRouter> 
     </>

@@ -1,199 +1,180 @@
-import React, { useEffect, useState } from 'react';
-import { ArrowUpRight, Sparkles, Radio } from 'lucide-react';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowRight, ShieldCheck, Sparkles } from "lucide-react";
+import { getSession } from "../../../utils/auth";
 
-// Local color/font tokens (previously imported from a shared Colourservice
-// file, which no longer exists — defined here directly). Matches Navbar.jsx.
-const GREEN = '#22c55e';
-const DARK = '#0a0f0d';
-const CARD_DARK = '#141a18';
-const FONT_SERIF = "'Playfair Display', serif";
-const FONT_MONO = "'JetBrains Mono', monospace";
-const FONT_HEAD = "'Poppins', sans-serif";
-const FONT_BODY = "'Inter', sans-serif";
+/* LoanMela official palette — now matches Navbar / Footer / About / Loanschema / Login */
+const PRIMARY = "#2f76fb";   // BLUE
+const NAVY = "#132261";      // NAVY
+const INK = "#132261";       // NAVY (used as hero base background)
+const LAVENDER = "#89b6f8";  // BLUE_LIGHT
+const WHITE = "#fdfdfd";     // WHITE
+const POPPINS = "'Poppins', sans-serif";
 
-const STATS = [
-  { value: 7.5, decimals: 1, suffix: '%', label: 'Starting interest' },
-  { value: 24, decimals: 0, suffix: 'hr', label: 'Quick approval' },
-  { value: 35, decimals: 0, suffix: 'Cr', label: 'Max funding' },
+const SCROLL_IMAGES = [
+  { src: "/images/homeloan.jpg", pos: "center 40%" },
+  { src: "/images/agriculture.jpg", pos: "center 55%" },
+  { src: "/images/bike.jpg", pos: "center 45%" },
+  { src: "/images/car loan.jpg", pos: "center 50%" },
+  { src: "/images/eductional loan.jpg", pos: "center 35%" },
+  { src: "/images/delivery partner.jpg", pos: "center 25%" },
+  { src: "/images/shopowner.jpg", pos: "center 30%" },
+  { src: "/images/mechanic.jpg", pos: "center 30%" },
 ];
 
-const FEED = [
-  { name: 'Rahul K.', city: 'Chennai', loan: 'Bike Loan', amount: '₹85,000', time: '2 min ago' },
-  { name: 'Ananya S.', city: 'Bengaluru', loan: 'Personal Loan', amount: '₹1.2L', time: '4 min ago' },
-  { name: 'Vignesh M.', city: 'Coimbatore', loan: 'Business Loan', amount: '₹4.5L', time: '6 min ago' },
-  { name: 'Fathima B.', city: 'Kochi', loan: 'Home Renovation', amount: '₹2.1L', time: '9 min ago' },
-  { name: 'Arjun P.', city: 'Pune', loan: 'Car Loan', amount: '₹6.8L', time: '11 min ago' },
-  { name: 'Divya R.', city: 'Hyderabad', loan: 'Gold Loan', amount: '₹95,000', time: '14 min ago' },
-];
+export default function Herosection() {
+  const navigate = useNavigate();
+  const [session, setSession] = useState(() => getSession());
 
-function useCountUp(target, decimals, active) {
-  const [value, setValue] = useState(0);
+  // Keep this in sync with login/logout that happen elsewhere in the app
+  // (e.g. the Navbar), same pattern used there — 'authchange' fires in the
+  // same tab right after login/logout, 'storage' covers other tabs.
   useEffect(() => {
-    if (!active) return;
-    let raf;
-    const duration = 1300;
-    const start = performance.now();
-    const tick = (now) => {
-      const p = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setValue(target * eased);
-      if (p < 1) raf = requestAnimationFrame(tick);
+    const syncSession = () => setSession(getSession());
+    window.addEventListener("authchange", syncSession);
+    window.addEventListener("storage", syncSession);
+    return () => {
+      window.removeEventListener("authchange", syncSession);
+      window.removeEventListener("storage", syncSession);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [active, target]);
-  return value.toFixed(decimals);
-}
+  }, []);
 
-function StatItem({ stat, active }) {
-  const display = useCountUp(stat.value, stat.decimals, active);
-  return (
-    <div>
-      <p className="text-2xl font-bold" style={{ color: GREEN, fontFamily: FONT_MONO }}>
-        {display}{stat.suffix}
-      </p>
-      <p className="text-[12px] text-white/45 mt-1">{stat.label}</p>
-    </div>
-  );
-}
+  // "Explore All Schemes" always takes the visitor to the dedicated Loan
+  // Scheme page (/schema) instead of scrolling down to the schemes preview
+  // embedded further down this same homepage.
+  const goToSchemes = () => {
+    navigate("/schema");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
-export default function HeroSection() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
-
-  const feedTrack = [...FEED, ...FEED];
+  // "Apply Here" is only shown to visitors who haven't registered yet — a
+  // logged-in user has already applied/registered, so the button is hidden
+  // for them. For a signed-out visitor it goes to the Register page rather
+  // than straight to the schemes page, since they need an account first.
+  const goToRegister = () => {
+    navigate("/register");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
-    <section
-      className="relative overflow-hidden"
-      style={{ background: DARK, fontFamily: FONT_BODY }}
-    >
-      <div
-        className="absolute inset-0 opacity-[0.25] pointer-events-none"
-        style={{
-          backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1px)',
-          backgroundSize: '22px 22px',
-        }}
-      />
-      <div className="absolute top-0 left-[5%] w-[500px] h-[500px] rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
+    <section id="home" className="relative h-[100svh] min-h-[600px] w-full flex items-center overflow-hidden select-none" style={{ background: INK }}>
 
-      <div className="relative max-w-6xl mx-auto px-6 md:px-10 pt-6 pb-20 md:pt-10 md:pb-28 grid lg:grid-cols-[1.15fr_0.85fr] gap-16 items-center">
+      {/* --- LAYER 1: FULL-BLEED BACKGROUND IMAGE SCROLLER --- */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <div className="flex h-full w-[800%] animate-full-scroll" style={{ willChange: "transform" }}>
+          {SCROLL_IMAGES.map((item, i) => (
+            <div key={i} className="relative h-full flex-shrink-0" style={{ width: "12.5%" }}>
+              <img
+                src={item.src}
+                alt=""
+                className="w-full h-full object-cover block"
+                style={{ objectPosition: item.pos }}
+              />
+            </div>
+          ))}
+        </div>
 
-        <div>
-          <div
-            className="inline-flex items-center gap-2 border rounded-full px-4 py-1.5 mb-8 text-[12px]"
-            style={{ borderColor: 'rgba(79,70,229,0.35)', color: GREEN, fontFamily: FONT_MONO }}
-          >
-            India's Loan Mela — Everything. One Roof.
+        {/* left-to-right scrim — restrained ink-navy fade, not a heavy blue wash */}
+        <div className="absolute inset-0 hidden md:block" style={{ background: `linear-gradient(90deg, ${INK}e8 0%, ${INK}c2 30%, ${INK}70 52%, ${INK}2a 72%, transparent 95%)` }} />
+        {/* mobile: even tint since content stacks full-width */}
+        <div className="absolute inset-0 md:hidden" style={{ background: `linear-gradient(180deg, ${INK}9a 0%, ${INK}70 28%, ${INK}c0 100%)` }} />
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/25 to-transparent" />
+      </div>
+
+      {/* subtle floating accents — quieter, for depth without a heavy blue cast */}
+      <div className="absolute top-[14%] left-[6%] w-40 h-40 rounded-full pointer-events-none animate-[lm-float_8s_ease-in-out_infinite]" style={{ background: `${LAVENDER}16`, filter: "blur(46px)" }} />
+      <div className="absolute bottom-[18%] right-[8%] w-52 h-52 rounded-full pointer-events-none animate-[lm-float_10s_ease-in-out_infinite_1.2s]" style={{ background: `${PRIMARY}14`, filter: "blur(54px)" }} />
+
+      {/* --- LAYER 2: LEFT-ALIGNED CONTENT --- */}
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-5 md:px-10 pt-14">
+        <div className="max-w-xl text-left">
+
+          <div className="inline-flex items-center gap-2 mb-5 px-4 py-1.5 rounded-full backdrop-blur-md bg-white/[0.07] border border-white/15">
+            <Sparkles size={13} style={{ color: LAVENDER }} />
+            <span style={{ fontFamily: POPPINS }} className="text-[11.5px] sm:text-[12px] font-medium tracking-wide text-white/90">
+              Constituency Loan Mela — One Place, Every Financing Solution
+            </span>
           </div>
 
           <h1
-            className="text-[2.75rem] md:text-6xl leading-[1.08] mb-7 font-bold"
-            style={{ color: '#fff', fontFamily: FONT_SERIF }}
+            style={{
+              fontFamily: POPPINS,
+              fontWeight: 700,
+              color: WHITE,
+              textShadow: "0 2px 4px rgba(0,0,0,0.9), 0 4px 24px rgba(0,0,0,0.85)",
+              letterSpacing: "-0.01em",
+            }}
+            className="text-[2.3rem] leading-[1.15] sm:text-5xl md:text-[3.4rem] md:leading-[1.12] mb-5"
           >
-            Loans that <span style={{ color: GREEN }}>meet your</span>
-            <br />
-            moment.
+            Every loan you need.{" "}
+            <span style={{ color: LAVENDER, filter: "drop-shadow(0 2px 8px rgba(137,182,248,0.35))" }}>
+              One mela you can trust.
+            </span>
           </h1>
 
-          <p className="text-white/55 text-base md:text-lg leading-relaxed mb-10 max-w-lg">
-            From your first bike to your dream home, from delivery gig capital
-            to business growth — compare, apply and get funded in minutes.
-            Transparent rates, zero hidden charges.
+          <p
+            style={{ fontFamily: POPPINS, color: "#e9ebf5", textShadow: "0 2px 10px rgba(0,0,0,0.75)" }}
+            className="text-[14.5px] sm:text-base leading-relaxed mb-7 font-normal"
+          >
+            Business, vehicle, home, education, agriculture or a career
+            upgrade — explore{" "}
+            <span style={{ fontWeight: 800, color: WHITE, fontVariantNumeric: "tabular-nums" }}>7</span> loan
+            categories and{" "}
+            <span style={{ fontWeight: 800, color: WHITE, fontVariantNumeric: "tabular-nums" }}>30+</span> purposes,
+            matched to your genuine need, not a random product.
           </p>
 
-          <div className="flex flex-wrap items-center gap-4 mb-14">
-            <button
-              className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-full font-bold text-white shadow-[0_10px_24px_rgba(79,70,229,0.35)] hover:shadow-[0_12px_30px_rgba(79,70,229,0.5)] transition-all hover:-translate-y-0.5 active:scale-95"
-              style={{ background: GREEN, fontFamily: FONT_HEAD }}
-            >
-              Explore Schemes
-              <ArrowUpRight size={17} strokeWidth={2.5} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-            </button>
-            <button
-              className="px-7 py-3.5 rounded-full font-bold text-white border border-white/15 hover:border-white/30 hover:bg-white/5 transition-all"
-              style={{ fontFamily: FONT_HEAD }}
-            >
-              Create Account
-            </button>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8 backdrop-blur-md bg-white/[0.07] border border-white/15">
+            <ShieldCheck size={14} style={{ color: LAVENDER }} />
+            <span style={{ fontFamily: POPPINS, fontWeight: 600 }} className="text-[12px] text-white/90">
+              <span style={{ fontWeight: 800, color: LAVENDER, fontVariantNumeric: "tabular-nums", letterSpacing: "0.01em" }}>
+                50,000+
+              </span>{" "}
+              Indians already guided through LoanMela
+            </span>
           </div>
 
-          <div className="flex flex-wrap gap-10 pt-8" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-            {STATS.map((s) => (
-              <StatItem key={s.label} stat={s} active={mounted} />
-            ))}
-          </div>
-        </div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            {!session && (
+              <button
+                onClick={goToRegister}
+                style={{ fontFamily: POPPINS, fontWeight: 600, background: `linear-gradient(135deg, ${PRIMARY}, ${LAVENDER})`, color: WHITE, boxShadow: "0 10px 30px -8px rgba(47,118,251,0.55)" }}
+                className="group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full transition-all duration-300 hover:-translate-y-0.5 active:scale-95 text-sm sm:text-[15px]"
+              >
+                Apply Here
+                <ArrowRight size={17} className="transition-transform group-hover:translate-x-1.5" />
+              </button>
+            )}
 
-        <div className="relative">
-          <div
-            className="relative rounded-3xl overflow-hidden border"
-            style={{ background: CARD_DARK, borderColor: 'rgba(255,255,255,0.08)' }}
-          >
-            <div className="flex items-center justify-between px-5 pt-5 pb-4">
-              <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest" style={{ color: GREEN, fontFamily: FONT_MONO }}>
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
-                </span>
-                Live activity
-              </span>
-              <Radio size={13} className="text-white/25" />
-            </div>
-
-            <div
-              className="relative h-[320px] overflow-hidden px-3 pb-3"
-              style={{
-                maskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
-                WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%)',
-              }}
+            <button
+              onClick={goToSchemes}
+              style={{ fontFamily: POPPINS, fontWeight: 600 }}
+              className="px-7 py-3.5 rounded-full border backdrop-blur-md transition-all text-sm sm:text-[15px] bg-white/[0.06] hover:bg-white/[0.12] text-white border-white/25"
             >
-              <div className="lm-feed-track flex flex-col gap-2.5">
-                {feedTrack.map((f, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-3 rounded-xl px-3.5 py-3"
-                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}
-                  >
-                    <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 font-extrabold text-[12px] text-white"
-                      style={{ background: 'rgba(79,70,229,0.2)', fontFamily: FONT_HEAD }}
-                    >
-                      {f.name.split(' ').map((p) => p[0]).join('')}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-bold text-white truncate" style={{ fontFamily: FONT_HEAD }}>
-                        {f.name} <span className="font-medium text-white/40">&middot; {f.city}</span>
-                      </p>
-                      <p className="text-[11.5px] text-white/45">{f.loan} approved</p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-[12.5px] font-bold" style={{ color: GREEN, fontFamily: FONT_MONO }}>{f.amount}</p>
-                      <p className="text-[10px] text-white/30">{f.time}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="px-5 py-4 flex items-center gap-2" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-              <Sparkles size={13} style={{ color: GREEN }} />
-              <span className="text-[11.5px] text-white/45">New approvals happening across India, right now</span>
-            </div>
+              Explore All Schemes
+            </button>
           </div>
         </div>
       </div>
 
       <style>{`
-        @keyframes lm-feed-scroll {
-          from { transform: translateY(0); }
-          to { transform: translateY(-50%); }
+        @keyframes full-scroll {
+          0%, 10.5%    { transform: translate3d(0, 0, 0); }
+          12.5%, 23%   { transform: translate3d(-12.5%, 0, 0); }
+          25%, 35.5%   { transform: translate3d(-25%, 0, 0); }
+          37.5%, 48%   { transform: translate3d(-37.5%, 0, 0); }
+          50%, 60.5%   { transform: translate3d(-50%, 0, 0); }
+          62.5%, 73%   { transform: translate3d(-62.5%, 0, 0); }
+          75%, 85.5%   { transform: translate3d(-75%, 0, 0); }
+          87.5%, 98%   { transform: translate3d(-87.5%, 0, 0); }
+          100%         { transform: translate3d(0, 0, 0); }
         }
-        .lm-feed-track {
-          animation: lm-feed-scroll 18s linear infinite;
+        .animate-full-scroll {
+          animation: full-scroll 24s cubic-bezier(0.8, 0, 0.2, 1) infinite;
         }
-        .lm-feed-track:hover {
-          animation-play-state: paused;
+        @keyframes lm-float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-16px); }
         }
       `}</style>
     </section>

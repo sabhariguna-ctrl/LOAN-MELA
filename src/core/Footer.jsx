@@ -3,14 +3,15 @@ import {
   Mail, Phone, MapPin, ArrowRight, Smartphone, TrendingUp,
 } from 'lucide-react';
 
-// Matches the wordmark font used in the Navbar logo (kept local there too,
-// since it's distinct from the Playfair Display FONT_HEAD used for section titles).
+// Matches the wordmark font used in the Navbar logo. All fonts across the
+// footer (logo, section headings, and body copy) now use Poppins for a
+// consistent typeface with the rest of the site.
 const LOGO_FONT = "'Poppins', sans-serif";
 
 // Local font tokens (previously imported from a shared Colourservice file,
 // which no longer exists — defined here directly to avoid re-adding it).
-const FONT_HEAD = "'Playfair Display', serif";
-const FONT_BODY = "'Inter', sans-serif";
+const FONT_HEAD = "'Poppins', sans-serif";
+const FONT_BODY = "'Poppins', sans-serif";
 
 /* ================= LOCAL LIGHT-THEME TOKENS =================
    Footer now sits on a white background (previously matched the dark
@@ -111,6 +112,9 @@ export default function Footer() {
         borderTop: `1px solid ${BLUE_TINT}`,
       }}
     >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+      `}</style>
 
       {/* Main grid */}
       <div className="max-w-6xl mx-auto px-6 md:px-10 py-14 grid grid-cols-1 md:grid-cols-[1.4fr_1fr_1fr_1fr_1fr] gap-10">
