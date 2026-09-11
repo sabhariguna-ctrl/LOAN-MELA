@@ -32,10 +32,10 @@ function csvCell(value) {
 }
 
 function downloadCsv(rows) {
-  const headers = ['ID', 'Scheme Name', 'Loan Type', 'Category', 'Interest Rate', 'Max Amount', 'Tenure', 'Status'];
+  const headers = ['ID', 'Scheme Name', 'Loan Type', 'Category', 'Bank', 'Interest Rate', 'Max Amount', 'Tenure', 'Status'];
   const lines = [headers.join(',')];
   rows.forEach((r) => {
-    lines.push([r.id, r.name, r.loanType, r.category, `${r.interestRate}%`, r.maxAmount, r.tenure, r.status].map(csvCell).join(','));
+    lines.push([r.id, r.name, r.loanType, r.category, r.bankName, `${r.interestRate}%`, r.maxAmount, r.tenure, r.status].map(csvCell).join(','));
   });
   const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -117,6 +117,7 @@ function DetailModal({ scheme, onClose }) {
   const rows = [
     ['Loan Type', scheme.loanType],
     ['Category', scheme.category],
+    ['Bank', scheme.bankName],
     ['Interest Rate', `${scheme.interestRate}% per annum`],
     ['Loan Amount', `${formatAmount(scheme.minAmount)} - ${formatAmount(scheme.maxAmount)}`],
     ['Tenure', scheme.tenure],
@@ -262,10 +263,10 @@ export default function SchemesList({
       ) : (
         <>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] border-collapse text-left">
+            <table className="w-full min-w-[940px] border-collapse text-left">
               <thead>
                 <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-                  {['#', 'Scheme Name', 'Loan Type', 'Category', 'Interest Rate', 'Max Amount', 'Tenure', 'Status', ''].map((h) => (
+                  {['#', 'Scheme Name', 'Loan Type', 'Category', 'Bank', 'Interest Rate', 'Max Amount', 'Tenure', 'Status', ''].map((h) => (
                     <th key={h} className="px-2 py-2.5 text-[11px] font-semibold uppercase tracking-wide" style={{ color: SLATE }}>{h}</th>
                   ))}
                 </tr>
@@ -277,6 +278,7 @@ export default function SchemesList({
                     <td className="px-2 py-3 text-[12.5px] font-semibold" style={{ color: BLUE }}>{row.name}</td>
                     <td className="px-2 py-3 text-[12.5px]" style={{ color: TEXT }}>{row.loanType}</td>
                     <td className="px-2 py-3 text-[12.5px]" style={{ color: TEXT }}>{row.category}</td>
+                    <td className="px-2 py-3 text-[12.5px]" style={{ color: TEXT }}>{row.bankName || '—'}</td>
                     <td className="px-2 py-3 text-[12.5px]" style={{ color: TEXT }}>{row.interestRate}%</td>
                     <td className="px-2 py-3 text-[12.5px] font-semibold" style={{ color: TEXT }}>{formatAmount(row.maxAmount)}</td>
                     <td className="px-2 py-3 text-[12px]" style={{ color: SLATE }}>{row.tenure}</td>

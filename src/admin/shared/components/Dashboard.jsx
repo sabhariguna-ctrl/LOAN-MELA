@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import {
   FileText, CheckCircle2, Clock, XCircle, ArrowUpRight, ArrowDownRight,
-  CalendarDays, ChevronDown, MoreVertical,
+  CalendarDays, ChevronDown, MoreVertical, Landmark, Building2, Users,
 } from 'lucide-react';
-import { getApplications } from '../../../utils/auth';
+import { getApplications, getUsers } from '../../../utils/auth';
+import { getSchemes, SCHEME_CHANGE_EVENT } from '../services/schemesService';
+import { getBanks, BANK_CHANGE_EVENT } from '../services/banksService';
 
 // Turns a hex color into an rgba() string — used for the soft, tinted
 // drop-shadows under the stat cards (each card's shadow matches its icon
@@ -174,6 +177,37 @@ function buildTopLoanTypes(applications) {
     .map((c, i) => ({ label: c.label, value: c.count, color: TYPE_PALETTE[i % TYPE_PALETTE.length] }));
 }
 
+// Applications alone only tell part of the story — this pulls in the
+// other three data sources the admin panel manages (Schemes, Banks,
+// Registered Users) so the dashboard reflects the whole project, not
+// just one month's application counts.
+function buildPlatformOverview(schemes, banks, users, applications) {
+  const activeSchemes = schemes.filter((s) => s.status === 'Active').length;
+  const activeBanks = banks.filter((b) => b.status === 'Active').length;
+  const appliedEmails = new Set(
+    applications.map((a) => (a.userEmail || '').toLowerCase()).filter(Boolean)
+  );
+  const usersWithApplications = users.filter((u) => appliedEmails.has((u.email || '').toLowerCase())).length;
+
+  return [
+    {
+      key: 'schemes', label: 'Loan Schemes', value: schemes.length,
+      sub: `${activeSchemes} Active${schemes.length - activeSchemes > 0 ? ` · ${schemes.length - activeSchemes} Inactive` : ''}`,
+      icon: Landmark, color: TEAL, tint: '#e6faf3', to: '/dashboard/schemes',
+    },
+    {
+      key: 'banks', label: 'Partner Banks', value: banks.length,
+      sub: `${activeBanks} Active${banks.length - activeBanks > 0 ? ` · ${banks.length - activeBanks} Inactive` : ''}`,
+      icon: Building2, color: PURPLE, tint: '#f3effe', to: '/dashboard/banks',
+    },
+    {
+      key: 'users', label: 'Registered Users', value: users.length,
+      sub: `${usersWithApplications} Applied for a Loan`,
+      icon: Users, color: PINK, tint: '#fdedf1', to: '/dashboard/registered-users',
+    },
+  ];
+}
+
 function formatAmount(raw) {
   const n = parseInt(raw, 10);
   if (!n) return '—';
@@ -236,6 +270,42 @@ function Sparkline({ points, color }) {
     <svg viewBox={`0 0 ${w} ${h}`} width={w} height={h} className="shrink-0">
       <polyline points={coords.join(' ')} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+// Platform-wide totals (Schemes, Banks, Registered Users) — unlike
+// StatCard, these describe the catalog/roster as it stands right now
+// rather than a month-over-month delta, and link through to the page
+// that manages that data.
+function OverviewCard({ label, value, sub, icon: Icon, color, tint, to }) {
+  return (
+    <Link
+      to={to}
+      className="dash-card flex items-center justify-between gap-3 rounded-2xl bg-white p-4"
+      style={{
+        '--card-border': BORDER,
+        '--card-accent': color,
+        '--card-shadow': `0 14px 28px -12px ${hexToRgba(color, 0.35)}`,
+        '--card-shadow-hover': `0 20px 36px -12px ${hexToRgba(color, 0.55)}`,
+      }}
+    >
+      <div className="flex items-center gap-2.5">
+        <div
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+          style={{ background: tint, color, boxShadow: `0 4px 10px -2px ${hexToRgba(color, 0.4)}` }}
+        >
+          <Icon size={18} strokeWidth={2.2} />
+        </div>
+        <div>
+          <p className="text-[12.5px] font-semibold" style={{ color: SLATE }}>{label}</p>
+          <div className="flex items-baseline gap-1.5">
+            <p className="text-[20px] font-extrabold" style={{ color: TEXT }}>{value}</p>
+            <p className="text-[11px] font-medium" style={{ color: SLATE }}>{sub}</p>
+          </div>
+        </div>
+      </div>
+      <ArrowUpRight size={14} className="shrink-0" style={{ color: SLATE, transform: 'rotate(45deg)' }} />
+    </Link>
   );
 }
 
@@ -637,20 +707,39 @@ function MonthDropdown({ value, onChange }) {
 
 export default function Dashboard() {
   const [applications, setApplications] = useState(() => getApplications());
+  const [schemes, setSchemes] = useState(() => getSchemes());
+  const [banks, setBanks] = useState(() => getBanks());
+  const [users, setUsers] = useState(() => getUsers());
   const [trendRange, setTrendRange] = useState(6);
   const [showAllApplications, setShowAllApplications] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => new Date());
 
-  // Applications are written from the public site (Loan Scheme page's
-  // "Apply Now" form) which may be a different tab/route than the admin
-  // panel, so refresh whenever a new one is submitted or storage changes.
+  // Applications, Schemes, Banks and Registered Users are each managed
+  // from their own admin page (possibly a different tab), so the
+  // dashboard stays live on every one of those data sources rather than
+  // just applications.
   useEffect(() => {
-    const refresh = () => setApplications(getApplications());
-    window.addEventListener('applicationschange', refresh);
-    window.addEventListener('storage', refresh);
+    const refreshApplications = () => setApplications(getApplications());
+    const refreshSchemes = () => setSchemes(getSchemes());
+    const refreshBanks = () => setBanks(getBanks());
+    const refreshUsers = () => setUsers(getUsers());
+    const refreshAll = () => {
+      refreshApplications();
+      refreshSchemes();
+      refreshBanks();
+      refreshUsers();
+    };
+    window.addEventListener('applicationschange', refreshApplications);
+    window.addEventListener(SCHEME_CHANGE_EVENT, refreshSchemes);
+    window.addEventListener(BANK_CHANGE_EVENT, refreshBanks);
+    window.addEventListener('authchange', refreshUsers);
+    window.addEventListener('storage', refreshAll);
     return () => {
-      window.removeEventListener('applicationschange', refresh);
-      window.removeEventListener('storage', refresh);
+      window.removeEventListener('applicationschange', refreshApplications);
+      window.removeEventListener(SCHEME_CHANGE_EVENT, refreshSchemes);
+      window.removeEventListener(BANK_CHANGE_EVENT, refreshBanks);
+      window.removeEventListener('authchange', refreshUsers);
+      window.removeEventListener('storage', refreshAll);
     };
   }, []);
 
@@ -660,6 +749,10 @@ export default function Dashboard() {
     setShowAllApplications(false);
   }, [selectedMonth]);
 
+  const platformOverview = useMemo(
+    () => buildPlatformOverview(schemes, banks, users, applications),
+    [schemes, banks, users, applications]
+  );
   const stats = useMemo(() => buildStats(applications, selectedMonth), [applications, selectedMonth]);
   const trend = useMemo(() => buildTrend(applications, trendRange), [applications, trendRange]);
   const loanTypeDistribution = useMemo(() => buildLoanTypeDistribution(applications), [applications]);
@@ -766,6 +859,13 @@ export default function Dashboard() {
           </div>
           <MonthDropdown value={selectedMonth} onChange={setSelectedMonth} />
         </div>
+      </div>
+
+      {/* Platform overview — Schemes, Banks and Registered Users, so the
+          dashboard covers the whole project at a glance, not just
+          applications for whatever month happens to be selected. */}
+      <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {platformOverview.map((s) => <OverviewCard key={s.key} {...s} />)}
       </div>
 
       {/* Stat cards */}

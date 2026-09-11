@@ -182,7 +182,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, FileText, Users, Landmark, Wallet,
+  LayoutDashboard, FileText, Users, Landmark, Building2, Wallet,
   BarChart3, Settings, LogOut, X,
 } from 'lucide-react';
 import { getSession, getApplications, logoutUser } from '../../utils/auth';
@@ -205,8 +205,9 @@ const FONT = "'Poppins', sans-serif";
 // "Applications" rather than showing nothing selected.
 const NAV_ITEMS = [
   { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, match: (p) => p === '/dashboard' },
+  { label: 'Banks', path: '/dashboard/banks', icon: Building2, match: (p) => p.startsWith('/dashboard/banks') },
   { label: 'Applications', path: '/dashboard/applications', icon: FileText, match: (p) => p.startsWith('/dashboard/applications'), countKey: 'pending' },
-  { label: 'Borrowers', path: '/dashboard/borrowers', icon: Users, match: (p) => p.startsWith('/dashboard/borrowers') },
+  { label: 'Registered Users', path: '/dashboard/registered-users', icon: Users, match: (p) => p.startsWith('/dashboard/registered-users') },
   { label: 'Loan Schemes', path: '/dashboard/schemes', icon: Landmark, match: (p) => p.startsWith('/dashboard/schemes') },
   { label: 'Repayments', path: '/dashboard/repayments', icon: Wallet, match: (p) => p.startsWith('/dashboard/repayments') },
   { label: 'Reports', path: '/dashboard/reports', icon: BarChart3, match: (p) => p.startsWith('/dashboard/reports') },

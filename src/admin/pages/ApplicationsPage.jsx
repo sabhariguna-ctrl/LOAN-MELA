@@ -4,6 +4,7 @@ import ApplicationHeader from '../shared/components/Applications/Application_Hea
 import ApplicationCards from '../shared/components/Applications/Application_Cards';
 import ApplicationFilter from '../shared/components/Applications/Application_Filter';
 import ApplicationsList from '../shared/components/Applications/Applications_List';
+import NewApplicationModal from '../shared/components/Applications/NewApplicationModal';
 
 const STATUS_OPTIONS = ['Pending', 'Approved', 'Rejected'];
 
@@ -27,6 +28,7 @@ export default function ApplicationsPage() {
   const [status, setStatus] = useState('All');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [isNewAppOpen, setIsNewAppOpen] = useState(false);
 
   // Applications can change from another tab/route (the public Loan
   // Scheme page's "Apply Now" form) or from this page's own row-menu
@@ -86,7 +88,7 @@ export default function ApplicationsPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <ApplicationHeader />
+      <ApplicationHeader onNewApplication={() => setIsNewAppOpen(true)} />
 
       <ApplicationCards applications={applications} />
 
@@ -110,6 +112,10 @@ export default function ApplicationsPage() {
         onStatusChange={setStatus}
         onUpdateStatus={handleUpdateStatus}
       />
+
+      {isNewAppOpen && (
+        <NewApplicationModal onClose={() => setIsNewAppOpen(false)} />
+      )}
     </div>
   );
 }

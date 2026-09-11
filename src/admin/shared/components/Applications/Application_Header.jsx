@@ -21,11 +21,10 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-// Page banner for /dashboard/applications. `onNewApplication` is optional —
-// there's no admin-side "create an application on a borrower's behalf"
-// flow in this app yet (applications only ever come in through the public
-// Loan Scheme page), so until that exists the button is presentational.
-// Pass a handler once that flow is built and it lights up for free.
+// Page banner for /dashboard/applications. `onNewApplication` opens
+// New_Application_Modal.jsx, the admin-side "log an application on a
+// borrower's behalf" flow (applications otherwise only come in through
+// the public Loan Scheme page's "Apply Now" form).
 export default function ApplicationHeader({ onNewApplication }) {
   return (
     <div

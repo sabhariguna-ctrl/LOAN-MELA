@@ -34,6 +34,8 @@ import Adminmain from '../core/Adminmain'
 import DashboardPage from '../pages/DashboardPage'
 import ApplicationsPage from '../pages/ApplicationsPage'
 import SchemesPage from '../pages/SchemesPage'
+import RegisteredUsersPage from '../pages/Registereduserspage'
+import BanksPage from '../pages/BanksPage'
 
 // Adminmain already renders Sidebar + Topbar once, globally, around
 // whatever the current admin route's Outlet content is. Routes nested
@@ -47,9 +49,10 @@ export default function Adminrouter() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/applications" element={<ApplicationsPage />} />
         <Route path="/schemes" element={<SchemesPage />} />
+        <Route path="/registered-users" element={<RegisteredUsersPage />} />
+        <Route path="/banks" element={<BanksPage />} />
         {/* Add the rest as their pages get built, e.g.:
-        <Route path="/borrowers" element={<Borrowers />} />
-                <Route path="/repayments" element={<Repayments />} />
+        <Route path="/repayments" element={<Repayments />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/settings" element={<SettingsPage />} />
         */}

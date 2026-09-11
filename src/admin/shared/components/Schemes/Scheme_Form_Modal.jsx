@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Landmark, ChevronDown, Upload, X } from 'lucide-react';
 import { LOAN_TYPES, CATEGORIES, TENURE_OPTIONS, COLLATERAL_OPTIONS } from '../../services/schemesService';
+import { getBanks } from '../../services/banksService';
 
 const NAVY = '#132261';
 const BLUE = '#2f76fb';
@@ -22,6 +23,7 @@ const textareaClass = `${textInputClass} resize-none`;
 const emptyForm = {
   name: '', loanType: '', category: '', shortDescription: '',
   bannerImage: null, keywords: '',
+  bankId: '',
   interestRate: '', maxAmount: '', minAmount: '', tenure: '',
   eligibility: '', documents: '',
   collateral: '', status: 'Active',
@@ -48,6 +50,13 @@ export default function SchemeFormModal({ initial, onClose, onSave }) {
   const [errors, setErrors] = useState({});
   const fileRef = useRef(null);
 
+  // Only active banks are offered here — an inactive bank shouldn't be
+  // newly attached to a scheme, though an existing scheme keeps whatever
+  // bank it already had even if that bank is later marked inactive.
+  const banks = getBanks()
+    .filter((b) => b.status === 'Active' || b.id === form.bankId)
+    .sort((a, b) => a.name.localeCompare(b.name));
+
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
   const handleBanner = (e) => {
@@ -63,6 +72,7 @@ export default function SchemeFormModal({ initial, onClose, onSave }) {
     if (!form.name.trim()) next.name = 'Scheme name is required.';
     if (!form.loanType) next.loanType = 'Select a loan type.';
     if (!form.category) next.category = 'Select a category.';
+    if (!form.bankId) next.bankId = 'Select a bank.';
     if (!form.shortDescription.trim()) next.shortDescription = 'Add a short description.';
     if (!form.interestRate || Number(form.interestRate) <= 0) next.interestRate = 'Enter a valid rate.';
     if (!form.maxAmount || Number(form.maxAmount) <= 0) next.maxAmount = 'Enter a valid amount.';
@@ -77,8 +87,10 @@ export default function SchemeFormModal({ initial, onClose, onSave }) {
 
   const handleSubmit = () => {
     if (!validate()) return;
+    const bank = banks.find((b) => b.id === form.bankId);
     onSave({
       ...form,
+      bankName: bank ? bank.name : form.bankName,
       interestRate: Number(form.interestRate),
       maxAmount: Number(form.maxAmount),
       minAmount: Number(form.minAmount),
@@ -138,6 +150,20 @@ export default function SchemeFormModal({ initial, onClose, onSave }) {
                 {errors.category && <p className="mt-1 text-[11px]" style={{ color: RED }}>{errors.category}</p>}
               </div>
               <div>
+                <label className={labelClass} style={{ color: TEXT }}>Select Bank <span style={{ color: RED }}>*</span></label>
+                <div className="relative">
+                  <select value={form.bankId} onChange={set('bankId')} className={`${selectClass} py-2.5`} style={fieldStyle}>
+                    <option value="">Select bank</option>
+                    {banks.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                  <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" style={{ color: SLATE }} />
+                </div>
+                {errors.bankId && <p className="mt-1 text-[11px]" style={{ color: RED }}>{errors.bankId}</p>}
+                {banks.length === 0 && (
+                  <p className="mt-1 text-[10.5px]" style={{ color: SLATE }}>No banks yet — add one under Banks first.</p>
+                )}
+              </div>
+              <div className="sm:col-span-2">
                 <label className={labelClass} style={{ color: TEXT }}>Short Description <span style={{ color: RED }}>*</span></label>
                 <textarea rows={1} maxLength={200} value={form.shortDescription} onChange={set('shortDescription')} placeholder="Enter a brief description about the scheme" className={textareaClass} style={fieldStyle} />
                 <p className="mt-1 text-right text-[10.5px]" style={{ color: SLATE }}>{form.shortDescription.length}/200</p>

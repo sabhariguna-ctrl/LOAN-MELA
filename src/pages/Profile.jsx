@@ -220,15 +220,30 @@ function SectionIllustration({ kind }) {
    Falls back to a plain silhouette placeholder until a photo is set. */
 function ProfilePhoto({ photoUrl, onPhotoChange }) {
   const inputRef = useRef(null);
+  const [processing, setProcessing] = useState(false);
 
-  const handleFile = (e) => {
+  const handleFile = async (e) => {
     const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file later
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => onPhotoChange(reader.result);
-    reader.readAsDataURL(file);
-    // allow re-selecting the same file later
-    e.target.value = '';
+
+    setProcessing(true);
+    try {
+      const resized = await resizeImageToDataUrl(file);
+      onPhotoChange(resized);
+    } catch {
+      // Fall back to the original file only if resizing itself failed
+      // (e.g. an image format the canvas couldn't decode) — better to
+      // save something than nothing, even if it's larger than ideal.
+      try {
+        const dataUrl = await fileToDataUrl(file);
+        onPhotoChange(dataUrl);
+      } catch {
+        // Give up silently; the avatar simply stays as it was.
+      }
+    } finally {
+      setProcessing(false);
+    }
   };
 
   return (
@@ -237,8 +252,9 @@ function ProfilePhoto({ photoUrl, onPhotoChange }) {
         type="button"
         onClick={() => inputRef.current?.click()}
         className="h-32 w-32 overflow-hidden rounded-full border-4"
-        style={{ borderColor: BLUE_PALE, background: BLUE_PALE }}
+        style={{ borderColor: BLUE_PALE, background: BLUE_PALE, opacity: processing ? 0.5 : 1 }}
         aria-label={photoUrl ? 'Change profile photo' : 'Upload profile photo'}
+        disabled={processing}
       >
         {photoUrl ? (
           <img src={photoUrl} alt="Profile" className="h-full w-full object-cover" />
@@ -252,9 +268,10 @@ function ProfilePhoto({ photoUrl, onPhotoChange }) {
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white shadow-sm"
+        className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full border-2 border-white shadow-sm disabled:opacity-60"
         style={{ background: BLUE }}
         aria-label="Change photo"
+        disabled={processing}
       >
         <Camera className="h-4 w-4 text-white" />
       </button>
@@ -364,6 +381,42 @@ function fileToDataUrl(file) {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
     reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Profile photos come straight off a phone camera (often several MB and
+// thousands of pixels wide) but only ever need to render inside a small
+// circular avatar. Stored as-is, a couple of these can blow past
+// localStorage's ~5-10MB quota on top of the KYC documents already saved
+// during Register — this is what was causing "Couldn't save" errors.
+// Downscaling to a modest max dimension and re-encoding as JPEG shrinks a
+// multi-MB photo down to tens of KB before it ever reaches localStorage.
+function resizeImageToDataUrl(file, maxDimension = 480, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(reader.error);
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height && width > maxDimension) {
+          height = Math.round((height * maxDimension) / width);
+          width = maxDimension;
+        } else if (height >= width && height > maxDimension) {
+          width = Math.round((width * maxDimension) / height);
+          height = maxDimension;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = reader.result;
+    };
     reader.readAsDataURL(file);
   });
 }
