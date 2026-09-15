@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FilePlus2, ChevronDown, X, CheckCircle2 } from 'lucide-react';
 import { getSchemes } from '../../services/schemesService';
+import { getBanks } from '../../services/banksService';
 import { submitApplication } from '../../../../utils/auth';
 
 // Same brand tokens as the rest of the Applications admin components
@@ -31,7 +32,7 @@ const STATUS_OPTIONS = [
   { key: 'Rejected', label: 'Rejected', color: '#c23b1f' },
 ];
 
-const emptyForm = { schemeId: '', name: '', phone: '', email: '', city: '', amount: '', status: 'Pending' };
+const emptyForm = { schemeId: '', name: '', phone: '', email: '', city: '', amount: '', bankId: '', status: 'Pending' };
 
 function formatAmount(n) {
   if (!n) return '';
@@ -57,6 +58,14 @@ export default function NewApplicationModal({ onClose }) {
   );
   const selectedScheme = schemes.find((s) => s.id === form.schemeId);
 
+  // Only active banks are offered — mirrors the "only active schemes"
+  // rule above.
+  const banks = useMemo(
+    () => getBanks().filter((b) => b.status === 'Active').sort((a, b) => a.name.localeCompare(b.name)),
+    []
+  );
+  const selectedBank = banks.find((b) => b.id === form.bankId);
+
   const set = (key) => (e) => {
     setForm((f) => ({ ...f, [key]: e.target.value }));
     setErrors((prev) => ({ ...prev, [key]: undefined }));
@@ -65,6 +74,7 @@ export default function NewApplicationModal({ onClose }) {
   const validate = () => {
     const next = {};
     if (!form.schemeId) next.schemeId = 'Select a loan scheme.';
+    if (!form.bankId) next.bankId = 'Select a bank.';
     if (!form.name.trim()) next.name = 'Applicant name is required.';
     if (!/^\d{10}$/.test(form.phone.trim())) next.phone = 'Enter a valid 10-digit mobile number.';
     if (!form.email.trim()) {
@@ -88,6 +98,7 @@ export default function NewApplicationModal({ onClose }) {
       parentName: selectedScheme.loanType,
       categoryLabel: selectedScheme.loanType,
       filterGroup: selectedScheme.category,
+      bank: selectedBank.name,
       name: form.name.trim(),
       phone: form.phone.trim(),
       email: form.email.trim(),
@@ -184,6 +195,28 @@ export default function NewApplicationModal({ onClose }) {
                     <p className="mt-1 text-[10.5px]" style={{ color: SLATE }}>
                       {formatAmount(selectedScheme.minAmount)} – {formatAmount(selectedScheme.maxAmount)} · {selectedScheme.interestRate}% p.a. · {selectedScheme.tenure}
                     </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className={labelClass} style={{ color: TEXT }}>Bank <span style={{ color: RED }}>*</span></label>
+                  <div className="relative">
+                    <select
+                      value={form.bankId}
+                      onChange={set('bankId')}
+                      className={`${selectClass} py-2.5`}
+                      style={errors.bankId ? errorFieldStyle : fieldStyle}
+                    >
+                      <option value="">Select a bank</option>
+                      {banks.map((b) => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" style={{ color: SLATE }} />
+                  </div>
+                  {errors.bankId && <p className="mt-1 text-[11px]" style={{ color: RED }}>{errors.bankId}</p>}
+                  {banks.length === 0 && (
+                    <p className="mt-1 text-[10.5px]" style={{ color: SLATE }}>No active banks yet — add one under Banks first.</p>
                   )}
                 </div>
 

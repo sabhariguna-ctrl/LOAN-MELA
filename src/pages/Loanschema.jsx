@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { getSession, submitApplication } from '../utils/auth';
 import { getSchemes, SCHEME_CHANGE_EVENT } from '../admin/shared/services/schemesService';
+import { getBanks } from '../admin/shared/services/banksService';
 
 /* ================= BRAND TOKENS =================
    Both FONT_SERIF and FONT_BODY use Poppins, matching the Navbar. */
@@ -207,7 +208,14 @@ export default function Loanschema() {
   const [applySubmitted, setApplySubmitted] = useState(false);
   const [applyErrors, setApplyErrors] = useState({});
 
-  const [applyForm, setApplyForm] = useState({ name: '', phone: '', email: '', amount: '', city: '' });
+  const [applyForm, setApplyForm] = useState({ name: '', phone: '', email: '', amount: '', city: '', bank: '' });
+
+  // Only active banks are offered — mirrors the "only active schemes"
+  // rule the loan scheme cards themselves already follow.
+  const activeBanks = React.useMemo(
+    () => getBanks().filter((b) => b.status === 'Active').sort((a, b) => a.name.localeCompare(b.name)),
+    []
+  );
 
   const pageRef = useRef(null);
 
@@ -243,6 +251,7 @@ export default function Loanschema() {
       email: session?.email || '',
       amount: '',
       city: '',
+      bank: '',
     });
   };
 
@@ -271,6 +280,7 @@ export default function Loanschema() {
 
     if (!applyForm.amount.trim()) errors.amount = 'Loan amount is required';
     if (!applyForm.city.trim()) errors.city = 'City is required';
+    if (!applyForm.bank.trim()) errors.bank = 'Select a preferred bank';
 
     if (Object.keys(errors).length > 0) {
       setApplyErrors(errors);
@@ -288,6 +298,7 @@ export default function Loanschema() {
       email: applyForm.email.trim(),
       amount: applyForm.amount.trim(),
       city: applyForm.city.trim(),
+      bank: applyForm.bank.trim(),
     });
 
     setApplySubmitted(true);
@@ -829,6 +840,26 @@ export default function Loanschema() {
                         </div>
                         {applyErrors.city && <p className="mt-1 text-[10px]" style={{ color: '#c0392b' }}>{applyErrors.city}</p>}
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-[12px] font-semibold" style={{ color: SLATE }}>Preferred Bank</label>
+                      <div className="relative">
+                        <Landmark className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <select
+                          value={applyForm.bank}
+                          onChange={(event) => updateApplyField('bank', event.target.value)}
+                          className="w-full appearance-none rounded-lg border py-2.5 pl-10 pr-8 text-[12px] outline-none transition-all focus:border-blue-500"
+                          style={{ borderColor: applyErrors.bank ? '#e0554f' : GRAY }}
+                        >
+                          <option value="">Select a bank</option>
+                          {activeBanks.map((b) => (
+                            <option key={b.id} value={b.name}>{b.name}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                      </div>
+                      {applyErrors.bank && <p className="mt-1 text-[10px]" style={{ color: '#c0392b' }}>{applyErrors.bank}</p>}
                     </div>
 
                     <div className="flex items-center justify-between gap-3 border-t pt-4" style={{ borderColor: `${GRAY}45` }}>

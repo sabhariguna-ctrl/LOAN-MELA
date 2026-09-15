@@ -182,7 +182,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, FileText, Users, Landmark, Building2, Wallet,
+  LayoutDashboard, FileText, CheckCircle2, Users, Landmark, Building2, Wallet,
   BarChart3, Settings, LogOut, X,
 } from 'lucide-react';
 import { getSession, getApplications, logoutUser } from '../../utils/auth';
@@ -207,6 +207,7 @@ const NAV_ITEMS = [
   { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, match: (p) => p === '/dashboard' },
   { label: 'Banks', path: '/dashboard/banks', icon: Building2, match: (p) => p.startsWith('/dashboard/banks') },
   { label: 'Applications', path: '/dashboard/applications', icon: FileText, match: (p) => p.startsWith('/dashboard/applications'), countKey: 'pending' },
+  { label: 'Approved', path: '/dashboard/approved', icon: CheckCircle2, match: (p) => p.startsWith('/dashboard/approved') },
   { label: 'Registered Users', path: '/dashboard/registered-users', icon: Users, match: (p) => p.startsWith('/dashboard/registered-users') },
   { label: 'Loan Schemes', path: '/dashboard/schemes', icon: Landmark, match: (p) => p.startsWith('/dashboard/schemes') },
   { label: 'Repayments', path: '/dashboard/repayments', icon: Wallet, match: (p) => p.startsWith('/dashboard/repayments') },
@@ -263,7 +264,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
       <aside
         className={`fixed left-0 top-16 bottom-0 z-40 flex w-64 flex-col bg-white transition-all duration-300 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 lg:w-[72px]'
+          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0 lg:w-18'
         }`}
         style={{ fontFamily: FONT, borderRight: `1px solid ${BORDER}` }}
       >

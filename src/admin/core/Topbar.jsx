@@ -294,6 +294,7 @@ const FONT = "'Poppins', sans-serif";
 const PAGE_TITLES = {
   '/dashboard': 'Dashboard',
   '/dashboard/applications': 'Applications',
+  '/dashboard/approved': 'Approved Applications',
   '/dashboard/registered-users': 'Registered Users',
   '/dashboard/schemes': 'Loan Schemes',
   '/dashboard/banks': 'Banks',

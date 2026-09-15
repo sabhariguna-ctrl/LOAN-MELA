@@ -33,6 +33,7 @@ import { Route, Routes } from 'react-router-dom'
 import Adminmain from '../core/Adminmain'
 import DashboardPage from '../pages/DashboardPage'
 import ApplicationsPage from '../pages/ApplicationsPage'
+import ApprovedPage from '../pages/ApprovedPage'
 import SchemesPage from '../pages/SchemesPage'
 import RegisteredUsersPage from '../pages/Registereduserspage'
 import BanksPage from '../pages/BanksPage'
@@ -48,6 +49,7 @@ export default function Adminrouter() {
       <Route element={<Adminmain />}>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/applications" element={<ApplicationsPage />} />
+        <Route path="/approved" element={<ApprovedPage />} />
         <Route path="/schemes" element={<SchemesPage />} />
         <Route path="/registered-users" element={<RegisteredUsersPage />} />
         <Route path="/banks" element={<BanksPage />} />
